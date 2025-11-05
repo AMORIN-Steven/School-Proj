@@ -10,10 +10,6 @@ class GestionMatieres {
             die("Erreur de connexion : " . $e->getMessage());
         }
     }
-    
-    /**
-     * Récupère toutes les matières avec leurs filières
-     */
     public function getMatieres() {
         $sql = "SELECT 
                     m.id,
@@ -30,30 +26,22 @@ class GestionMatieres {
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-    /**
-     * Récupère toutes les filières disponibles
-     */
+
     public function getFilieres() {
         $sql = "SELECT * FROM filieres ORDER BY nom";
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    /**
-     * Ajoute une nouvelle matière avec ses filières
-     */
     public function ajouterMatiere($nom, $filieres_ids) {
         try {
             $this->pdo->beginTransaction();
             
-            // Insérer la matière
             $sql = "INSERT INTO matieres (nom) VALUES (?)";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$nom]);
             $matiere_id = $this->pdo->lastInsertId();
             
-            // Associer les filières
             $sql = "INSERT INTO matiere_filiere (matiere_id, filiere_id) VALUES (?, ?)";
             $stmt = $this->pdo->prepare($sql);
             
@@ -69,10 +57,7 @@ class GestionMatieres {
             throw $e;
         }
     }
-    
-    /**
-     * Récupère une matière par son ID
-     */
+ 
     public function getMatiereById($id) {
         $sql = "SELECT 
                     m.id,
@@ -94,25 +79,19 @@ class GestionMatieres {
         
         return $matiere;
     }
-    
-    /**
-     * Modifie une matière existante
-     */
+ 
     public function modifierMatiere($id, $nom, $filieres_ids) {
         try {
             $this->pdo->beginTransaction();
             
-            // Mettre à jour le nom de la matière
             $sql = "UPDATE matieres SET nom = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$nom, $id]);
             
-            // Supprimer les anciennes associations
             $sql = "DELETE FROM matiere_filiere WHERE matiere_id = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([$id]);
             
-            // Ajouter les nouvelles associations
             $sql = "INSERT INTO matiere_filiere (matiere_id, filiere_id) VALUES (?, ?)";
             $stmt = $this->pdo->prepare($sql);
             
@@ -128,10 +107,7 @@ class GestionMatieres {
             throw $e;
         }
     }
-    
-    /**
-     * Supprime une matière
-     */
+ 
     public function supprimerMatiere($id) {
         try {
             $sql = "DELETE FROM matieres WHERE id = ?";
@@ -141,10 +117,7 @@ class GestionMatieres {
             throw $e;
         }
     }
-    
-    /**
-     * Vérifie si une matière existe
-     */
+
     public function matiereExists($nom, $exclude_id = null) {
         $sql = "SELECT COUNT(*) FROM matieres WHERE nom = ?";
         $params = [$nom];
@@ -160,9 +133,6 @@ class GestionMatieres {
     }
 }
 
-/**
- * Fonction utilitaire pour envoyer des réponses JSON
- */
 function sendJsonResponse($success, $data = null, $error = null) {
     header('Content-Type: application/json');
     echo json_encode([
@@ -173,7 +143,6 @@ function sendJsonResponse($success, $data = null, $error = null) {
     exit;
 }
 
-// Gestion des requêtes
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gestion = new GestionMatieres();
     $action = $_POST['action'] ?? '';
@@ -184,7 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $nom = trim($_POST['nom'] ?? '');
                 $filieres = $_POST['filieres'] ?? [];
                 
-                // Validation
                 if (empty($nom)) {
                     throw new Exception("Le nom de la matière est obligatoire");
                 }
@@ -262,7 +230,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Si accès direct au fichier, afficher les matières (pour debug)
 if (basename($_SERVER['PHP_SELF']) == 'gestion_matieres.php' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $gestion = new GestionMatieres();
     $matieres = $gestion->getMatieres();
