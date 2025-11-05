@@ -7,7 +7,6 @@ let matieres = [
 let currentMatiereId = null;
 let modal = null;
 
-// Initialisation
 document.addEventListener('DOMContentLoaded', function() {
     modal = new bootstrap.Modal(document.getElementById('matiereModal'));
     updateMatiereList();
@@ -16,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function openModal(action, matiereId) {
     const modalTitle = document.getElementById('modalTitle');
     
-    // Réinitialiser les cases à cocher
     document.querySelectorAll('.form-check-input').forEach(checkbox => {
         checkbox.checked = false;
     });
@@ -67,7 +65,6 @@ function validateForm() {
     }
     
     if (matiereId) {
-        // Modification
         const index = matieres.findIndex(m => m.id === parseInt(matiereId));
         if (index !== -1) {
             matieres[index].nom = nom;
@@ -75,7 +72,6 @@ function validateForm() {
             showAlert('Matière modifiée avec succès!', 'success');
         }
     } else {
-        // Ajout
         const newId = matieres.length > 0 ? Math.max(...matieres.map(m => m.id)) + 1 : 1;
         matieres.push({ id: newId, nom: nom, filieres: selectedFilieres });
         showAlert('Matière ajoutée avec succès!', 'success');
@@ -149,7 +145,6 @@ function updateMatiereList() {
 }
 
 function showAlert(message, type) {
-    // Créer un toast Bootstrap
     const toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
     toastContainer.style.zIndex = '1060';
@@ -178,7 +173,6 @@ function showAlert(message, type) {
     
     toast.show();
     
-    // Nettoyer après la fermeture
     toastElement.addEventListener('hidden.bs.toast', () => {
         toastContainer.remove();
     });
