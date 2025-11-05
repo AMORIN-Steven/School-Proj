@@ -1,6 +1,9 @@
 <?php
 /**
- * Script de connexion et initialisation de base de données scolaire
+ * Script de connexion et initialisation de base de données scolaire (Afrique / Bénin)
+ * Auteur : DG BLT
+ * Date : 2025
+ * Version améliorée avec contraintes d'unicité
  */
 
 $host = 'localhost';
@@ -9,20 +12,24 @@ $user = 'root';
 $pass = '';
 
 try {
-    // Connexion initiale sans base
+    // Connexion initiale sans base pour créer la BDD
     $bdd = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 
-    // Création de la base de données
+    // Création de la base de données si elle n'existe pas
     $bdd->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-    // Connexion à la base
+    // echo "✅ Base de données '$dbname' vérifiée/créée avec succès.<br>";
+
+    // Connexion à la base de données
     $bdd = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 
-    // --- Création des tables ---
+    // echo "✅ Connexion à la base de données réussie.<br><br>";
+
+    // --- Création des tables avec contraintes d'unicité ---
     $tablesSQL = <<<SQL
     SET FOREIGN_KEY_CHECKS=0;
 
@@ -50,7 +57,7 @@ try {
       `Id_ens` INT NOT NULL AUTO_INCREMENT,
       `nom` VARCHAR(100),
       `prenom` VARCHAR(100),
-      `mail` VARCHAR(255),
+      `mail` VARCHAR(255) UNIQUE,
       `Id_user` INT DEFAULT NULL,
       PRIMARY KEY (`Id_ens`),
       FOREIGN KEY (`Id_user`) REFERENCES `user`(`Id_user`) ON DELETE SET NULL ON UPDATE CASCADE
@@ -58,7 +65,7 @@ try {
 
     CREATE TABLE IF NOT EXISTS `filiere` (
       `Id_fil` INT NOT NULL AUTO_INCREMENT,
-      `nom` VARCHAR(100),
+      `nom` VARCHAR(100) UNIQUE,
       PRIMARY KEY (`Id_fil`)
     ) ENGINE=InnoDB;
 
@@ -66,7 +73,7 @@ try {
       `Id_etud` INT NOT NULL AUTO_INCREMENT,
       `nom` VARCHAR(100) NOT NULL,
       `prenom` VARCHAR(100),
-      `mail` VARCHAR(255),
+      `mail` VARCHAR(255) UNIQUE,
       `Id_fil` INT DEFAULT NULL,
       `matricule` VARCHAR(50) UNIQUE,
       `Id_user` INT DEFAULT NULL,
@@ -75,13 +82,72 @@ try {
       FOREIGN KEY (`Id_fil`) REFERENCES `filiere`(`Id_fil`) ON DELETE SET NULL ON UPDATE CASCADE
     ) ENGINE=InnoDB;
 
+    CREATE TABLE IF NOT EXISTS `matiere` (
+      `Id_mat` INT NOT NULL AUTO_INCREMENT,
+      `nom` VARCHAR(100) UNIQUE,
+      `Id_ens` INT DEFAULT NULL,
+      PRIMARY KEY (`Id_mat`),
+      FOREIGN KEY (`Id_ens`) REFERENCES `enseignant`(`Id_ens`) ON DELETE SET NULL ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS `filliere_matiere` (
+      `Id_fil_mat` INT NOT NULL AUTO_INCREMENT,
+      `Id_fil` INT DEFAULT NULL,
+      `Id_mat` INT DEFAULT NULL,
+      PRIMARY KEY (`Id_fil_mat`),
+      UNIQUE KEY `unique_filiere_matiere` (`Id_fil`, `Id_mat`),
+      FOREIGN KEY (`Id_fil`) REFERENCES `filiere`(`Id_fil`) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (`Id_mat`) REFERENCES `matiere`(`Id_mat`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS `note` (
+      `Id_note` INT NOT NULL AUTO_INCREMENT,
+      `Id_ens` INT DEFAULT NULL,
+      `Id_mat` INT DEFAULT NULL,
+      `Id_etud` INT DEFAULT NULL,
+      `cc` FLOAT DEFAULT NULL,
+      `exam` FLOAT DEFAULT NULL,
+      PRIMARY KEY (`Id_note`),
+      UNIQUE KEY `unique_notes` (`Id_etud`, `Id_mat`),
+      FOREIGN KEY (`Id_ens`) REFERENCES `enseignant`(`Id_ens`) ON DELETE SET NULL ON UPDATE CASCADE,
+      FOREIGN KEY (`Id_mat`) REFERENCES `matiere`(`Id_mat`) ON DELETE SET NULL ON UPDATE CASCADE,
+      FOREIGN KEY (`Id_etud`) REFERENCES `etud`(`Id_etud`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
     CREATE TABLE IF NOT EXISTS `parent` (
       `Id_parent` INT NOT NULL AUTO_INCREMENT,
       `nom` VARCHAR(100) NOT NULL,
       `prenoms` VARCHAR(100),
-      `mail` VARCHAR(255),
+      `mail` VARCHAR(255) UNIQUE,
       `Id_user` INT DEFAULT NULL,
       PRIMARY KEY (`Id_parent`),
+      FOREIGN KEY (`Id_user`) REFERENCES `user`(`Id_user`) ON DELETE SET NULL ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS `parent_enfant` (
+      `Id_par_enf` INT NOT NULL AUTO_INCREMENT,
+      `Id_parent` INT DEFAULT NULL,
+      `Id_etud` INT DEFAULT NULL,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`Id_par_enf`),
+      UNIQUE KEY `unique_parent_enfant` (`Id_parent`, `Id_etud`),
+      FOREIGN KEY (`Id_parent`) REFERENCES `parent`(`Id_parent`) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (`Id_etud`) REFERENCES `etud`(`Id_etud`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS `programme` (
+      `Id_prog` INT NOT NULL AUTO_INCREMENT,
+      `Id_ens` INT DEFAULT NULL,
+      `Id_fil` INT DEFAULT NULL,
+      `titre` VARCHAR(255),
+      `Id_user` INT DEFAULT NULL,
+      `salle` VARCHAR(50),
+      `date_debut` DATE DEFAULT NULL,
+      `date_fin` DATE DEFAULT NULL,
+      PRIMARY KEY (`Id_prog`),
+      FOREIGN KEY (`Id_ens`) REFERENCES `enseignant`(`Id_ens`) ON DELETE SET NULL ON UPDATE CASCADE,
+      FOREIGN KEY (`Id_fil`) REFERENCES `filiere`(`Id_fil`) ON DELETE SET NULL ON UPDATE CASCADE,
       FOREIGN KEY (`Id_user`) REFERENCES `user`(`Id_user`) ON DELETE SET NULL ON UPDATE CASCADE
     ) ENGINE=InnoDB;
 
@@ -89,105 +155,173 @@ try {
     SQL;
 
     $bdd->exec($tablesSQL);
+    // echo "✅ Tables créées avec succès.<br><br>";
 
-    // --- VIDER LES TABLES EXISTANTES ---
-    $bdd->exec("SET FOREIGN_KEY_CHECKS=0");
-    $tables = ['parent', 'etud', 'enseignant', 'admin', 'user', 'filiere'];
-    foreach ($tables as $table) {
-        $bdd->exec("TRUNCATE TABLE `$table`");
+    // --- Insertion des données africaines / béninoises ---
+    // echo "⏳ Insertion des données exemples...<br>";
+
+    // Fonction pour insertion sécurisée sans doublons
+    function insertIfNotExists($bdd, $table, $data) {
+        try {
+            $fields = implode(',', array_keys($data));
+            $placeholders = implode(',', array_fill(0, count($data), '?'));
+            $stmt = $bdd->prepare("INSERT INTO $table ($fields) VALUES ($placeholders)");
+            $stmt->execute(array_values($data));
+            return true;
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                // echo "⚠️ Doublon ignoré dans $table<br>";
+                return false;
+            } else {
+                throw $e;
+            }
+        }
     }
-    $bdd->exec("SET FOREIGN_KEY_CHECKS=1");
 
-    // --- INSERTION DES DONNÉES DE TEST ---
-
-    // 1. Filières
-    $filieres = ['Informatique', 'Gestion', 'Droit', 'Communication', 'Agronomie'];
-    $stmt = $bdd->prepare("INSERT INTO filiere(nom) VALUES (?)");
-    foreach ($filieres as $f) {
-        $stmt->execute([$f]);
-    }
-
-    // 2. Utilisateurs avec mots de passe EN CLAIR (pour test)
+    // 1. Utilisateurs
     $users = [
-        // 1 Admin
-        ['admin@ecole.bj', 'Admin', 'System', 'admin123', '+22901000001', 'admin'],
-        
-        // 3 Enseignants
-        ['prof1@ecole.bj', 'Kossi', 'Agnès', 'prof123', '+22901000002', 'enseignant'],
-        ['prof2@ecole.bj', 'Gbèto', 'Jean', 'prof123', '+22901000003', 'enseignant'],
-        ['prof3@ecole.bj', 'Adjovi', 'Marc', 'prof123', '+22901000004', 'enseignant'],
-        
-        // 6 Étudiants
-        ['etud1@ecole.bj', 'Ahouansou', 'Nadine', 'etud123', '+22901000005', 'etudiant'],
-        ['etud2@ecole.bj', 'Tossou', 'Franck', 'etud123', '+22901000006', 'etudiant'],
-        ['etud3@ecole.bj', 'Aklé', 'Josué', 'etud123', '+22901000007', 'etudiant'],
-        ['etud4@ecole.bj', 'Chabi', 'Rita', 'etud123', '+22901000008', 'etudiant'],
-        ['etud5@ecole.bj', 'Adjahoui', 'Karel', 'etud123', '+22901000009', 'etudiant'],
-        ['etud6@ecole.bj', 'Soglo', 'Prisca', 'etud123', '+22901000010', 'etudiant'],
-        
-        // 6 Parents
-        ['parent1@ecole.bj', 'Hounkpati', 'Céline', 'parent123', '+22901000011', 'parent'],
-        ['parent2@ecole.bj', 'Adoh', 'Yvan', 'parent123', '+22901000012', 'parent'],
-        ['parent3@ecole.bj', 'Gbeto', 'Louise', 'parent123', '+22901000013', 'parent'],
-        ['parent4@ecole.bj', 'Adjovi', 'Thérèse', 'parent123', '+22901000014', 'parent'],
-        ['parent5@ecole.bj', 'Zinsou', 'Pierre', 'parent123', '+22901000015', 'parent'],
-        ['parent6@ecole.bj', 'Soglo', 'René', 'parent123', '+22901000016', 'parent']
+        ['mail' => 'agnes.kossi@gmail.com', 'nom' => 'Kossi', 'prenom' => 'Agnès', 'motdepasse' => 'pass123', 'tel' => '+22962000001', 'status' => 'admin'],
+        ['mail' => 'ahmed.ouedraogo@gmail.com', 'nom' => 'Ouedraogo', 'prenom' => 'Ahmed', 'motdepasse' => 'pass123', 'tel' => '+22671000002', 'status' => 'enseignant'],
+        ['mail' => 'sarah.mensah@gmail.com', 'nom' => 'Mensah', 'prenom' => 'Sarah', 'motdepasse' => 'pass123', 'tel' => '+23354000003', 'status' => 'etudiant'],
+        ['mail' => 'boris.tchedre@gmail.com', 'nom' => 'Tchedre', 'prenom' => 'Boris', 'motdepasse' => 'pass123', 'tel' => '+22997000004', 'status' => 'enseignant'],
+        ['mail' => 'mariam.traore@gmail.com', 'nom' => 'Traoré', 'prenom' => 'Mariam', 'motdepasse' => 'pass123', 'tel' => '+22557000005', 'status' => 'etudiant'],
+        ['mail' => 'yvan.adoh@gmail.com', 'nom' => 'Adoh', 'prenom' => 'Yvan', 'motdepasse' => 'pass123', 'tel' => '+22966000006', 'status' => 'parent'],
+        ['mail' => 'fatou.diop@gmail.com', 'nom' => 'Diop', 'prenom' => 'Fatou', 'motdepasse' => 'pass123', 'tel' => '+22177000007', 'status' => 'etudiant'],
+        ['mail' => 'david.ekoue@gmail.com', 'nom' => 'Ekoué', 'prenom' => 'David', 'motdepasse' => 'pass123', 'tel' => '+22890000008', 'status' => 'enseignant'],
+        ['mail' => 'celine.hounkpati@gmail.com', 'nom' => 'Hounkpati', 'prenom' => 'Céline', 'motdepasse' => 'pass123', 'tel' => '+22961000009', 'status' => 'parent'],
+        ['mail' => 'paul.abalo@gmail.com', 'nom' => 'Abalo', 'prenom' => 'Paul', 'motdepasse' => 'pass123', 'tel' => '+22893000010', 'status' => 'admin']
     ];
-
-    $stmt = $bdd->prepare("INSERT INTO user(mail, nom, prenom, motdepasse, tel, status) VALUES (?,?,?,?,?,?)");
-    foreach ($users as $u) {
-        $stmt->execute($u);
+    
+    foreach ($users as $user) {
+        insertIfNotExists($bdd, 'user', $user);
     }
 
-    // 3. Admins
-    $admins = [
-        ['Admin', 'System', 1]
-    ];
-    $stmt = $bdd->prepare("INSERT INTO admin(nom, prenom, Id_user) VALUES (?,?,?)");
-    foreach ($admins as $a) {
-        $stmt->execute($a);
+    // 2. Filières
+    $filieres = ['Informatique', 'Gestion', 'Droit', 'Communication', 'Agronomie', 'Économie', 'Mathématiques', 'Physique', 'Comptabilité', 'Marketing'];
+    foreach ($filieres as $f) {
+        insertIfNotExists($bdd, 'filiere', ['nom' => $f]);
     }
 
-    // 4. Enseignants
+    // 3. Enseignants
     $enseignants = [
-        ['Kossi', 'Agnès', 'prof1@ecole.bj', 2],
-        ['Gbèto', 'Jean', 'prof2@ecole.bj', 3],
-        ['Adjovi', 'Marc', 'prof3@ecole.bj', 4]
+        ['nom' => 'Adjovi', 'prenom' => 'Marc', 'mail' => 'marc.adjovi@ub.bj', 'Id_user' => 2],
+        ['nom' => 'Gbèto', 'prenom' => 'Jean', 'mail' => 'jean.gbeto@ub.bj', 'Id_user' => 4],
+        ['nom' => 'Ekoué', 'prenom' => 'David', 'mail' => 'david.ekoue@tg.tg', 'Id_user' => 8],
+        ['nom' => 'Zinsou', 'prenom' => 'Clarisse', 'mail' => 'clarisse.zinsou@ub.bj', 'Id_user' => null],
+        ['nom' => 'Ouattara', 'prenom' => 'Ibrahim', 'mail' => 'ibrahim.ouattara@ci.ci', 'Id_user' => null],
+        ['nom' => 'Sodjinou', 'prenom' => 'Luc', 'mail' => 'luc.sodjinou@ub.bj', 'Id_user' => null],
+        ['nom' => 'Ayélo', 'prenom' => 'Bénédicte', 'mail' => 'benedicte.ayelo@ub.bj', 'Id_user' => null],
+        ['nom' => 'Kombaté', 'prenom' => 'Issa', 'mail' => 'issa.kombate@ub.bj', 'Id_user' => null],
+        ['nom' => 'Nadjo', 'prenom' => 'Elise', 'mail' => 'elise.nadjo@ub.bj', 'Id_user' => null],
+        ['nom' => 'Agossa', 'prenom' => 'Patrick', 'mail' => 'patrick.agossa@ub.bj', 'Id_user' => null]
     ];
-    $stmt = $bdd->prepare("INSERT INTO enseignant(nom, prenom, mail, Id_user) VALUES (?,?,?,?)");
+    
     foreach ($enseignants as $e) {
-        $stmt->execute($e);
+        insertIfNotExists($bdd, 'enseignant', $e);
     }
 
-    // 5. Étudiants
+    // 4. Étudiants
     $etudiants = [
-        ['Ahouansou', 'Nadine', 'etud1@ecole.bj', 1, 'INF001', 5],
-        ['Tossou', 'Franck', 'etud2@ecole.bj', 2, 'GES001', 6],
-        ['Aklé', 'Josué', 'etud3@ecole.bj', 3, 'DRO001', 7],
-        ['Chabi', 'Rita', 'etud4@ecole.bj', 4, 'COM001', 8],
-        ['Adjahoui', 'Karel', 'etud5@ecole.bj', 5, 'AGR001', 9],
-        ['Soglo', 'Prisca', 'etud6@ecole.bj', 1, 'INF002', 10]
+        ['nom' => 'Ahouansou', 'prenom' => 'Nadine', 'mail' => 'nadine.ahouansou@ub.bj', 'Id_fil' => 1, 'matricule' => 'INF001', 'Id_user' => 3],
+        ['nom' => 'Tossou', 'prenom' => 'Franck', 'mail' => 'franck.tossou@ub.bj', 'Id_fil' => 2, 'matricule' => 'GES002', 'Id_user' => 5],
+        ['nom' => 'Aklé', 'prenom' => 'Josué', 'mail' => 'josue.akle@ub.bj', 'Id_fil' => 3, 'matricule' => 'DRO003', 'Id_user' => 7],
+        ['nom' => 'Chabi', 'prenom' => 'Rita', 'mail' => 'rita.chabi@ub.bj', 'Id_fil' => 4, 'matricule' => 'COM004', 'Id_user' => null],
+        ['nom' => 'Adjahoui', 'prenom' => 'Karel', 'mail' => 'karel.adjahoui@ub.bj', 'Id_fil' => 5, 'matricule' => 'AGR005', 'Id_user' => null],
+        ['nom' => 'Soglo', 'prenom' => 'Prisca', 'mail' => 'prisca.soglo@ub.bj', 'Id_fil' => 6, 'matricule' => 'ECO006', 'Id_user' => null],
+        ['nom' => 'Hounsou', 'prenom' => 'Yannick', 'mail' => 'yannick.hounsou@ub.bj', 'Id_fil' => 7, 'matricule' => 'MAT007', 'Id_user' => null],
+        ['nom' => 'Tokpo', 'prenom' => 'Clarisse', 'mail' => 'clarisse.tokpo@ub.bj', 'Id_fil' => 8, 'matricule' => 'PHY008', 'Id_user' => null],
+        ['nom' => 'Loko', 'prenom' => 'Maxime', 'mail' => 'maxime.loko@ub.bj', 'Id_fil' => 9, 'matricule' => 'COM009', 'Id_user' => null],
+        ['nom' => 'Adjaho', 'prenom' => 'Patricia', 'mail' => 'patricia.adjaho@ub.bj', 'Id_fil' => 10, 'matricule' => 'INF010', 'Id_user' => null]
     ];
-    $stmt = $bdd->prepare("INSERT INTO etud(nom, prenom, mail, Id_fil, matricule, Id_user) VALUES (?,?,?,?,?,?)");
+    
     foreach ($etudiants as $e) {
-        $stmt->execute($e);
+        insertIfNotExists($bdd, 'etud', $e);
     }
 
-    // 6. Parents
-    $parents = [
-        ['Hounkpati', 'Céline', 'parent1@ecole.bj', 11],
-        ['Adoh', 'Yvan', 'parent2@ecole.bj', 12],
-        ['Gbeto', 'Louise', 'parent3@ecole.bj', 13],
-        ['Adjovi', 'Thérèse', 'parent4@ecole.bj', 14],
-        ['Zinsou', 'Pierre', 'parent5@ecole.bj', 15],
-        ['Soglo', 'René', 'parent6@ecole.bj', 16]
-    ];
-    $stmt = $bdd->prepare("INSERT INTO parent(nom, prenoms, mail, Id_user) VALUES (?,?,?,?)");
-    foreach ($parents as $p) {
-        $stmt->execute($p);
+    // 5. Matières
+    $matieres = ['Mathématiques', 'Programmation', 'Réseaux', 'Comptabilité', 'Communication', 'Agronomie', 'Droit civil', 'Marketing', 'Statistiques', 'Physique'];
+    foreach ($matieres as $i => $m) {
+        insertIfNotExists($bdd, 'matiere', ['nom' => $m, 'Id_ens' => ($i % 10) + 1]);
     }
+
+    // 6. Notes
+    for ($i = 1; $i <= 10; $i++) {
+        insertIfNotExists($bdd, 'note', [
+            'Id_ens' => $i, 
+            'Id_mat' => $i, 
+            'Id_etud' => $i, 
+            'cc' => rand(8,18), 
+            'exam' => rand(10,20)
+        ]);
+    }
+
+    // 7. Parents
+    $parents = [
+        ['nom' => 'Hounkpati', 'prenoms' => 'Céline', 'mail' => 'celine.hounkpati@gmail.com', 'Id_user' => 9],
+        ['nom' => 'Adoh', 'prenoms' => 'Yvan', 'mail' => 'yvan.adoh@gmail.com', 'Id_user' => 6],
+        ['nom' => 'Gbeto', 'prenoms' => 'Louise', 'mail' => 'louise.gbeto@gmail.com', 'Id_user' => null],
+        ['nom' => 'Adjovi', 'prenoms' => 'Thérèse', 'mail' => 'therese.adjovi@gmail.com', 'Id_user' => null],
+        ['nom' => 'Zinsou', 'prenoms' => 'Pierre', 'mail' => 'pierre.zinsou@gmail.com', 'Id_user' => null],
+        ['nom' => 'Soglo', 'prenoms' => 'René', 'mail' => 'rene.soglo@gmail.com', 'Id_user' => null],
+        ['nom' => 'Loko', 'prenoms' => 'Justine', 'mail' => 'justine.loko@gmail.com', 'Id_user' => null],
+        ['nom' => 'Agossa', 'prenoms' => 'Maurice', 'mail' => 'maurice.agossa@gmail.com', 'Id_user' => null],
+        ['nom' => 'Tossou', 'prenoms' => 'Noël', 'mail' => 'noel.tossou@gmail.com', 'Id_user' => null],
+        ['nom' => 'Adjaho', 'prenoms' => 'Patricia', 'mail' => 'patricia.adjaho@gmail.com', 'Id_user' => null]
+    ];
+    
+    foreach ($parents as $p) {
+        insertIfNotExists($bdd, 'parent', $p);
+    }
+
+    // 8. Relations parent-enfant
+    for ($i = 1; $i <= 10; $i++) {
+        insertIfNotExists($bdd, 'parent_enfant', ['Id_parent' => $i, 'Id_etud' => $i]);
+    }
+
+    // 9. Programmes
+    for ($i = 1; $i <= 10; $i++) {
+        insertIfNotExists($bdd, 'programme', [
+            'Id_ens' => $i, 
+            'Id_fil' => $i, 
+            'titre' => "Cours de " . $matieres[$i-1], 
+            'Id_user' => $i, 
+            'salle' => "Salle " . chr(64+$i),
+            'date_debut' => '2025-01-0' . (($i%9)+1), 
+            'date_fin' => '2025-02-0' . (($i%9)+1)
+        ]);
+    }
+
+    // 10. filliere_matiere
+    $relations = [
+        // Informatique
+        ['Id_fil' => 1, 'Id_mat' => 2], ['Id_fil' => 1, 'Id_mat' => 3], ['Id_fil' => 1, 'Id_mat' => 9],
+        // Gestion
+        ['Id_fil' => 2, 'Id_mat' => 4], ['Id_fil' => 2, 'Id_mat' => 8],
+        // Droit
+        ['Id_fil' => 3, 'Id_mat' => 7],
+        // Communication
+        ['Id_fil' => 4, 'Id_mat' => 5],
+        // Agronomie
+        ['Id_fil' => 5, 'Id_mat' => 6],
+        // Économie
+        ['Id_fil' => 6, 'Id_mat' => 9],
+        // Mathématiques
+        ['Id_fil' => 7, 'Id_mat' => 1], ['Id_fil' => 7, 'Id_mat' => 9],
+        // Physique
+        ['Id_fil' => 8, 'Id_mat' => 10],
+        // Comptabilité
+        ['Id_fil' => 9, 'Id_mat' => 4],
+        // Marketing
+        ['Id_fil' => 10, 'Id_mat' => 8]
+    ];
+
+    foreach ($relations as $r) {
+        insertIfNotExists($bdd, 'filliere_matiere', $r);
+    }
+
+    // echo "✅ Données insérées avec succès dans toutes les tables.";
 
 } catch (PDOException $e) {
-    die("Erreur : " . $e->getMessage());
+    die("❌ Erreur : " . $e->getMessage());
 }
 ?>
