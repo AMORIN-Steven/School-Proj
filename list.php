@@ -1,21 +1,11 @@
 <?php
+
+include "includes/bdd.php";
 // Fichier pour récupérer les données depuis la base de données
 header('Content-Type: application/json');
 
 // Configuration de la base de données
-$host = 'localhost';
-$dbname = 'ecole_db';
-$user = 'root';
-$pass = '';
 
-// Connexion à la base de données
-try {
-    $bdd = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
-    $bdd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur de connexion à la base de données']);
-    exit;
-}
 
 // Récupérer l'action demandée
 $action = $_GET['action'] ?? '';
@@ -43,7 +33,7 @@ if ($action === 'filieres') {
     try {
         $sql = "SELECT DISTINCT m.Id_mat, m.nom 
                 FROM matiere m
-                INNER JOIN fil_mat fm ON m.Id_mat = fm.Id_mat
+                INNER JOIN filliere_matiere fm ON m.Id_mat = fm.Id_mat
                 WHERE fm.Id_fil = ?
                 ORDER BY m.nom";
         

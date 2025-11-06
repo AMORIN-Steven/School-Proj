@@ -73,6 +73,9 @@ async function loadMatieres(filiereId) {
         }
         
         const matieres = await response.json();
+
+        console.log(matieres);
+        
         
         matiereSelect.innerHTML = '<option value="">-- Choisir une matière --</option>';
         matieres.forEach(matiere => {
