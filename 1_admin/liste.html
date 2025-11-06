@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Liste des Filières</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #111827;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      padding: 10px;
+    }
+
+    th {
+      background: #f3f4f6;
+    }
+
+    .action-btn {
+      display: inline-block;
+      margin-right: 8px;
+      color: #2563eb;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .action-btn.delete {
+      color: #dc2626;
+    }
+
+    .link {
+      color: #2563eb;
+      text-decoration: none;
+      margin-right: 10px;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .btn-add {
+      display: inline-block;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .btn-add:hover {
+      background: #1d4ed8;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 30px;
+      border-radius: 12px;
+      width: 500px;
+      max-width: 90%;
+    }
+
+    .alert {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .alert.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Liste des Filières</h1>
+    
+    <div id="message"></div>
+    
+    <a href="ajouter.html" class="btn-add">➕ Ajouter une filière</a>
+    
+    <table id="tableFilieres">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nom</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyFilieres">
+        <!-- Les données seront chargées ici via JavaScript -->
+      </tbody>
+    </table>
+
+    <p><a href="index.html" class="link">⬅ Retour à l'accueil</a></p>
+  </div>
+
+  <!-- Modal pour la modification -->
+  <div id="modalModifier" class="modal">
+    <div class="modal-content">
+      <h2>Modifier la filière</h2>
+      <form id="formModifier">
+        <input type="hidden" name="id" id="modifierId">
+        <label>Nom de la filière</label>
+        <input type="text" name="nom_filiere" id="modifierNom" required>
+        
+        <button type="submit" style="margin-right: 10px;">Modifier</button>
+        <button type="button" onclick="fermerModal()">Annuler</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/jquery.min.js"></script>
+  <script>
+    function chargerFilieres() {
+      $.ajax({
+        url: 'php/lister_filieres.php',
+        type: 'GET',
+        dataType: 'json',
+        success: function(filieres) {
+          var tbody = $('#tbodyFilieres');
+          tbody.empty();
+          
+          if (filieres.length === 0) {
+            tbody.append('<tr><td colspan="3" style="text-align: center;">Aucune filière trouvée</td></tr>');
+          } else {
+            filieres.forEach(function(filiere) {
+              var row = '<tr>' +
+                '<td>' + filiere.Id_fil + '</td>' +
+                '<td>' + filiere.nom + '</td>' +
+                '<td>' +
+                '<a class="action-btn" onclick="ouvrirModalModifier(' + filiere.Id_fil + ', \'' + filiere.nom + '\')">✏️ Modifier</a>' +
+                '<a class="action-btn delete" onclick="supprimerFiliere(' + filiere.Id_fil + ')">🗑️ Supprimer</a>' +
+                '</td>' +
+                '</tr>';
+              tbody.append(row);
+            });
+          }
+        },
+        error: function() {
+          $('#message').html('<div class="alert error">Erreur lors du chargement des filières</div>');
+        }
+      });
+    }
+
+    function supprimerFiliere(id) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette filière ?')) {
+        $.ajax({
+          url: 'php/supprimer_filiere.php',
+          type: 'POST',
+          data: { id: id },
+          dataType: 'json',
+          success: function(response) {
+            if (response.success) {
+              $('#message').html('<div class="alert success">Filière supprimée avec succès!</div>');
+              chargerFilieres();
+            } else {
+              $('#message').html('<div class="alert error">Erreur: ' + response.error + '</div>');
+            }
+          },
+          error: function() {
+            $('#message').html('<div class="alert error">Erreur lors de la suppression</div>');
+          }
+        });
+      }
+    }
+
+    function ouvrirModalModifier(id, nom) {
+      $('#modifierId').val(id);
+      $('#modifierNom').val(nom);
+      $('#modalModifier').show();
+    }
+
+    function fermerModal() {
+      $('#modalModifier').hide();
+    }
+
+    $(document).ready(function() {
+      chargerFilieres();
+      
+      $('#formModifier').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = $(this).serialize();
+        
+        $.ajax({
+          url: 'php/modifier_filiere.php',
+          type: 'POST',
+          data: formData,
+          dataType: 'json',
+          success: function(response) {
+            if (response.success) {
+              $('#message').html('<div class="alert success">Filière modifiée avec succès!</div>');
+              fermerModal();
+              chargerFilieres();
+            } else {
+              alert('Erreur: ' + response.error);
+            }
+          },
+          error: function() {
+            alert('Erreur lors de la modification');
+          }
+        });
+      });
+      
+      // Fermer le modal en cliquant en dehors
+      $(window).on('click', function(e) {
+        if ($(e.target).is('#modalModifier')) {
+          fermerModal();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -149,7 +149,7 @@ try {
     ) ENGINE=InnoDB;
 
     SET FOREIGN_KEY_CHECKS=1;
-    SQL;
+SQL;
 
     $bdd->exec($tablesSQL);
     // echo "✅ Tables créées avec succès.<br><br>";
