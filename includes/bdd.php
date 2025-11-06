@@ -3,7 +3,7 @@
  * Script de connexion et initialisation de base de données scolaire (Afrique / Bénin)
  * Auteur : DG BLT
  * Date : 2025
- * Version améliorée avec contraintes d'unicité
+ * Version INTELLIGENTE - Préserve les données
  */
 
 $host = 'localhost';
@@ -12,24 +12,16 @@ $user = 'root';
 $pass = '';
 
 try {
-    // Connexion initiale sans base pour créer la BDD
+    // Connexion et création de la BDD
     $bdd = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-
-    // Création de la base de données si elle n'existe pas
     $bdd->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-
-    // echo "✅ Base de données '$dbname' vérifiée/créée avec succès.<br>";
-
-    // Connexion à la base de données
     $bdd = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 
-    // echo "✅ Connexion à la base de données réussie.<br><br>";
-
-    // --- Création des tables avec contraintes d'unicité ---
+    // --- Création des tables ---
     $tablesSQL = <<<SQL
     SET FOREIGN_KEY_CHECKS=0;
 
@@ -155,12 +147,8 @@ try {
     SQL;
 
     $bdd->exec($tablesSQL);
-    // echo "✅ Tables créées avec succès.<br><br>";
 
-    // --- Insertion des données africaines / béninoises ---
-    // echo "⏳ Insertion des données exemples...<br>";
-
-    // Fonction pour insertion sécurisée sans doublons
+    // --- Fonctions utilitaires ---
     function insertIfNotExists($bdd, $table, $data) {
         try {
             $fields = implode(',', array_keys($data));
@@ -170,7 +158,6 @@ try {
             return true;
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                // echo "⚠️ Doublon ignoré dans $table<br>";
                 return false;
             } else {
                 throw $e;
@@ -178,148 +165,217 @@ try {
         }
     }
 
-    // 1. Utilisateurs
-    $users = [
-        ['mail' => 'agnes.kossi@gmail.com', 'nom' => 'Kossi', 'prenom' => 'Agnès', 'motdepasse' => 'pass123', 'tel' => '+22962000001', 'status' => 'admin'],
-        ['mail' => 'ahmed.ouedraogo@gmail.com', 'nom' => 'Ouedraogo', 'prenom' => 'Ahmed', 'motdepasse' => 'pass123', 'tel' => '+22671000002', 'status' => 'enseignant'],
-        ['mail' => 'sarah.mensah@gmail.com', 'nom' => 'Mensah', 'prenom' => 'Sarah', 'motdepasse' => 'pass123', 'tel' => '+23354000003', 'status' => 'etudiant'],
-        ['mail' => 'boris.tchedre@gmail.com', 'nom' => 'Tchedre', 'prenom' => 'Boris', 'motdepasse' => 'pass123', 'tel' => '+22997000004', 'status' => 'enseignant'],
-        ['mail' => 'mariam.traore@gmail.com', 'nom' => 'Traoré', 'prenom' => 'Mariam', 'motdepasse' => 'pass123', 'tel' => '+22557000005', 'status' => 'etudiant'],
-        ['mail' => 'yvan.adoh@gmail.com', 'nom' => 'Adoh', 'prenom' => 'Yvan', 'motdepasse' => 'pass123', 'tel' => '+22966000006', 'status' => 'parent'],
-        ['mail' => 'fatou.diop@gmail.com', 'nom' => 'Diop', 'prenom' => 'Fatou', 'motdepasse' => 'pass123', 'tel' => '+22177000007', 'status' => 'etudiant'],
-        ['mail' => 'david.ekoue@gmail.com', 'nom' => 'Ekoué', 'prenom' => 'David', 'motdepasse' => 'pass123', 'tel' => '+22890000008', 'status' => 'enseignant'],
-        ['mail' => 'celine.hounkpati@gmail.com', 'nom' => 'Hounkpati', 'prenom' => 'Céline', 'motdepasse' => 'pass123', 'tel' => '+22961000009', 'status' => 'parent'],
-        ['mail' => 'paul.abalo@gmail.com', 'nom' => 'Abalo', 'prenom' => 'Paul', 'motdepasse' => 'pass123', 'tel' => '+22893000010', 'status' => 'admin']
-    ];
-    
-    foreach ($users as $user) {
-        insertIfNotExists($bdd, 'user', $user);
+    function shouldInsertDemoData($bdd) {
+        // Insère les données de démo SEULEMENT si la base est vide
+        $count = $bdd->query("SELECT COUNT(*) FROM user")->fetchColumn();
+        return ($count == 0);
     }
 
-    // 2. Filières
-    $filieres = ['Informatique', 'Gestion', 'Droit', 'Communication', 'Agronomie', 'Économie', 'Mathématiques', 'Physique', 'Comptabilité', 'Marketing'];
-    foreach ($filieres as $f) {
-        insertIfNotExists($bdd, 'filiere', ['nom' => $f]);
+    // --- INSERTION INTELLIGENTE ---
+    if (shouldInsertDemoData($bdd)) {
+        echo "🔄 Initialisation de la base avec les données de démo...<br>";
+
+        // 1. UTILISATEURS (15 users - TOUS utilisés)
+        $users = [
+            // Admins (2) - AVEC profils admin
+            ['mail' => 'admin.ecole@ub.bj', 'nom' => 'Admin', 'prenom' => 'Système', 'motdepasse' => 'pass123', 'tel' => '+22961000001', 'status' => 'admin'],
+            ['mail' => 'direction@ub.bj', 'nom' => 'Directeur', 'prenom' => 'École', 'motdepasse' => 'pass123', 'tel' => '+22961000002', 'status' => 'admin'],
+            
+            // Enseignants (3) - AVEC profils enseignant
+            ['mail' => 'marc.adjovi@ub.bj', 'nom' => 'Adjovi', 'prenom' => 'Marc', 'motdepasse' => 'pass123', 'tel' => '+22962000003', 'status' => 'enseignant'],
+            ['mail' => 'jean.gbeto@ub.bj', 'nom' => 'Gbèto', 'prenom' => 'Jean', 'motdepasse' => 'pass123', 'tel' => '+22962000004', 'status' => 'enseignant'],
+            ['mail' => 'clarisse.zinsou@ub.bj', 'nom' => 'Zinsou', 'prenom' => 'Clarisse', 'motdepasse' => 'pass123', 'tel' => '+22962000005', 'status' => 'enseignant'],
+            
+            // Étudiants (5) - AVEC profils étudiant
+            ['mail' => 'nadine.ahouansou@ub.bj', 'nom' => 'Ahouansou', 'prenom' => 'Nadine', 'motdepasse' => 'pass123', 'tel' => '+22963000006', 'status' => 'etudiant'],
+            ['mail' => 'franck.tossou@ub.bj', 'nom' => 'Tossou', 'prenom' => 'Franck', 'motdepasse' => 'pass123', 'tel' => '+22963000007', 'status' => 'etudiant'],
+            ['mail' => 'rita.chabi@ub.bj', 'nom' => 'Chabi', 'prenom' => 'Rita', 'motdepasse' => 'pass123', 'tel' => '+22963000008', 'status' => 'etudiant'],
+            ['mail' => 'karel.adjahoui@ub.bj', 'nom' => 'Adjahoui', 'prenom' => 'Karel', 'motdepasse' => 'pass123', 'tel' => '+22963000009', 'status' => 'etudiant'],
+            ['mail' => 'prisca.soglo@ub.bj', 'nom' => 'Soglo', 'prenom' => 'Prisca', 'motdepasse' => 'pass123', 'tel' => '+22963000010', 'status' => 'etudiant'],
+            
+            // Parents (5) - AVEC profils parent
+            ['mail' => 'jean.ahouansou@ub.bj', 'nom' => 'Ahouansou', 'prenom' => 'Jean', 'motdepasse' => 'pass123', 'tel' => '+22964000011', 'status' => 'parent'],
+            ['mail' => 'martial.tossou@ub.bj', 'nom' => 'Tossou', 'prenom' => 'Martial', 'motdepasse' => 'pass123', 'tel' => '+22964000012', 'status' => 'parent'],
+            ['mail' => 'julienne.chabi@ub.bj', 'nom' => 'Chabi', 'prenom' => 'Julienne', 'motdepasse' => 'pass123', 'tel' => '+22964000013', 'status' => 'parent'],
+            ['mail' => 'pierre.adjahoui@ub.bj', 'nom' => 'Adjahoui', 'prenom' => 'Pierre', 'motdepasse' => 'pass123', 'tel' => '+22964000014', 'status' => 'parent'],
+            ['mail' => 'rene.soglo@ub.bj', 'nom' => 'Soglo', 'prenom' => 'René', 'motdepasse' => 'pass123', 'tel' => '+22964000015', 'status' => 'parent'],
+        ];
+        
+        foreach ($users as $user) {
+            insertIfNotExists($bdd, 'user', $user);
+        }
+
+        // 2. ADMINS (2 admins - liés aux users admin)
+        $admins = [
+            ['nom' => 'Admin', 'prenom' => 'Système', 'Id_user' => 1],
+            ['nom' => 'Directeur', 'prenom' => 'École', 'Id_user' => 2],
+        ];
+        
+        foreach ($admins as $admin) {
+            insertIfNotExists($bdd, 'admin', $admin);
+        }
+
+        // 3. FILIÈRES (5 filières)
+        $filieres = ['Informatique', 'Gestion', 'Droit', 'Communication', 'Agronomie'];
+        foreach ($filieres as $f) {
+            insertIfNotExists($bdd, 'filiere', ['nom' => $f]);
+        }
+
+        // 4. ENSEIGNANTS (3 enseignants - liés aux users enseignant)
+        $enseignants = [
+            ['nom' => 'Adjovi', 'prenom' => 'Marc', 'mail' => 'marc.adjovi@ub.bj', 'Id_user' => 3],
+            ['nom' => 'Gbèto', 'prenom' => 'Jean', 'mail' => 'jean.gbeto@ub.bj', 'Id_user' => 4],
+            ['nom' => 'Zinsou', 'prenom' => 'Clarisse', 'mail' => 'clarisse.zinsou@ub.bj', 'Id_user' => 5],
+        ];
+        
+        foreach ($enseignants as $e) {
+            insertIfNotExists($bdd, 'enseignant', $e);
+        }
+
+        // 5. ÉTUDIANTS (5 étudiants - liés aux users étudiant)
+        $etudiants = [
+            ['nom' => 'Ahouansou', 'prenom' => 'Nadine', 'mail' => 'nadine.ahouansou@ub.bj', 'Id_fil' => 1, 'matricule' => 'INF001', 'Id_user' => 6],
+            ['nom' => 'Tossou', 'prenom' => 'Franck', 'mail' => 'franck.tossou@ub.bj', 'Id_fil' => 2, 'matricule' => 'GES001', 'Id_user' => 7],
+            ['nom' => 'Chabi', 'prenom' => 'Rita', 'mail' => 'rita.chabi@ub.bj', 'Id_fil' => 3, 'matricule' => 'DRO001', 'Id_user' => 8],
+            ['nom' => 'Adjahoui', 'prenom' => 'Karel', 'mail' => 'karel.adjahoui@ub.bj', 'Id_fil' => 4, 'matricule' => 'COM001', 'Id_user' => 9],
+            ['nom' => 'Soglo', 'prenom' => 'Prisca', 'mail' => 'prisca.soglo@ub.bj', 'Id_fil' => 5, 'matricule' => 'AGR001', 'Id_user' => 10],
+        ];
+        
+        foreach ($etudiants as $e) {
+            insertIfNotExists($bdd, 'etud', $e);
+        }
+
+        // 6. MATIÈRES (5 matières)
+        $matieres = ['Mathématiques', 'Programmation', 'Comptabilité', 'Droit civil', 'Communication'];
+        foreach ($matieres as $i => $m) {
+            insertIfNotExists($bdd, 'matiere', ['nom' => $m, 'Id_ens' => ($i % 3) + 1]);
+        }
+
+        // 7. PARENTS (5 parents - liés aux users parent)
+        $parents = [
+            ['nom' => 'Ahouansou', 'prenoms' => 'Jean', 'mail' => 'jean.ahouansou@ub.bj', 'Id_user' => 11],
+            ['nom' => 'Tossou', 'prenoms' => 'Martial', 'mail' => 'martial.tossou@ub.bj', 'Id_user' => 12],
+            ['nom' => 'Chabi', 'prenoms' => 'Julienne', 'mail' => 'julienne.chabi@ub.bj', 'Id_user' => 13],
+            ['nom' => 'Adjahoui', 'prenoms' => 'Pierre', 'mail' => 'pierre.adjahoui@ub.bj', 'Id_user' => 14],
+            ['nom' => 'Soglo', 'prenoms' => 'René', 'mail' => 'rene.soglo@ub.bj', 'Id_user' => 15],
+        ];
+        
+        foreach ($parents as $p) {
+            insertIfNotExists($bdd, 'parent', $p);
+        }
+
+        // 8. RELATIONS PARENT-ENFANT (COHÉRENTES et COMPLÈTES)
+        $relations_parent_enfant = [
+            // Famille Ahouansou
+            ['Id_parent' => 1, 'Id_etud' => 1], // Jean Ahouansou → Nadine Ahouansou (fille)
+            
+            // Famille Tossou  
+            ['Id_parent' => 2, 'Id_etud' => 2], // Martial Tossou → Franck Tossou (fils)
+            
+            // Famille Chabi
+            ['Id_parent' => 3, 'Id_etud' => 3], // Julienne Chabi → Rita Chabi (fille)
+            
+            // Famille Adjahoui
+            ['Id_parent' => 4, 'Id_etud' => 4], // Pierre Adjahoui → Karel Adjahoui (fils)
+            
+            // Famille Soglo
+            ['Id_parent' => 5, 'Id_etud' => 5], // René Soglo → Prisca Soglo (fille)
+            
+            // Relations supplémentaires (familles recomposées)
+            ['Id_parent' => 1, 'Id_etud' => 4], // Jean Ahouansou → Karel Adjahoui (neveu)
+            ['Id_parent' => 2, 'Id_etud' => 5], // Martial Tossou → Prisca Soglo (belle-fille)
+        ];
+        
+        foreach ($relations_parent_enfant as $r) {
+            insertIfNotExists($bdd, 'parent_enfant', $r);
+        }
+
+        // 9. RELATIONS FILIÈRE-MATIÈRE (COHÉRENTES)
+        $relations_filiere_matiere = [
+            // Informatique
+            ['Id_fil' => 1, 'Id_mat' => 1], // Mathématiques
+            ['Id_fil' => 1, 'Id_mat' => 2], // Programmation
+            
+            // Gestion  
+            ['Id_fil' => 2, 'Id_mat' => 1], // Mathématiques
+            ['Id_fil' => 2, 'Id_mat' => 3], // Comptabilité
+            
+            // Droit
+            ['Id_fil' => 3, 'Id_mat' => 4], // Droit civil
+            
+            // Communication
+            ['Id_fil' => 4, 'Id_mat' => 5], // Communication
+            
+            // Agronomie
+            ['Id_fil' => 5, 'Id_mat' => 1], // Mathématiques
+        ];
+        
+        foreach ($relations_filiere_matiere as $r) {
+            insertIfNotExists($bdd, 'filliere_matiere', $r);
+        }
+
+        // 10. NOTES (COHÉRENTES avec étudiants et matières existantes)
+        $notes = [
+            // Étudiant 1 (Nadine) - Informatique
+            ['Id_ens' => 1, 'Id_mat' => 1, 'Id_etud' => 1, 'cc' => 14, 'exam' => 16], // Maths
+            ['Id_ens' => 1, 'Id_mat' => 2, 'Id_etud' => 1, 'cc' => 15, 'exam' => 17], // Programmation
+            
+            // Étudiant 2 (Franck) - Gestion
+            ['Id_ens' => 1, 'Id_mat' => 1, 'Id_etud' => 2, 'cc' => 12, 'exam' => 14], // Maths
+            ['Id_ens' => 2, 'Id_mat' => 3, 'Id_etud' => 2, 'cc' => 16, 'exam' => 15], // Comptabilité
+            
+            // Étudiant 3 (Rita) - Droit
+            ['Id_ens' => 3, 'Id_mat' => 4, 'Id_etud' => 3, 'cc' => 13, 'exam' => 16], // Droit civil
+            
+            // Étudiant 4 (Karel) - Communication
+            ['Id_ens' => 3, 'Id_mat' => 5, 'Id_etud' => 4, 'cc' => 14, 'exam' => 15], // Communication
+            
+            // Étudiant 5 (Prisca) - Agronomie
+            ['Id_ens' => 1, 'Id_mat' => 1, 'Id_etud' => 5, 'cc' => 11, 'exam' => 13], // Maths
+        ];
+        
+        foreach ($notes as $n) {
+            insertIfNotExists($bdd, 'note', $n);
+        }
+
+        // 11. PROGRAMMES (COHÉRENTS - utilisent les users existants)
+        $programmes = [
+            ['Id_ens' => 1, 'Id_fil' => 1, 'titre' => 'Cours de Programmation', 'Id_user' => 3, 'salle' => 'Salle A1', 'date_debut' => '2025-01-10', 'date_fin' => '2025-02-10'],
+            ['Id_ens' => 2, 'Id_fil' => 2, 'titre' => 'Cours de Comptabilité', 'Id_user' => 4, 'salle' => 'Salle B2', 'date_debut' => '2025-01-15', 'date_fin' => '2025-02-15'],
+            ['Id_ens' => 3, 'Id_fil' => 3, 'titre' => 'Cours de Droit civil', 'Id_user' => 5, 'salle' => 'Salle C3', 'date_debut' => '2025-01-20', 'date_fin' => '2025-02-20'],
+        ];
+        
+        foreach ($programmes as $p) {
+            insertIfNotExists($bdd, 'programme', $p);
+        }
+
+        echo "✅ Données de démo insérées avec succès !<br>";
+        echo "📧 Comptes de test créés :<br>";
+        echo "&nbsp;&nbsp;• Admin: <strong>admin.ecole@ub.bj</strong> / <strong>pass123</strong><br>";
+        echo "&nbsp;&nbsp;• Étudiant: <strong>nadine.ahouansou@ub.bj</strong> / <strong>pass123</strong><br>";
+        echo "&nbsp;&nbsp;• Enseignant: <strong>marc.adjovi@ub.bj</strong> / <strong>pass123</strong><br>";
+        echo "&nbsp;&nbsp;• Parent: <strong>jean.ahouansou@ub.bj</strong> / <strong>pass123</strong><br>";
+        
+    } else {
+        // Affiche les statistiques sans toucher aux données
+        echo "✅ Base de données déjà initialisée<br>";
+        echo "📊 Statistiques actuelles :<br>";
+        
+        $stats = $bdd->query("
+            SELECT 'Utilisateurs' as type, COUNT(*) as count FROM user
+            UNION SELECT 'Étudiants', COUNT(*) FROM etud  
+            UNION SELECT 'Enseignants', COUNT(*) FROM enseignant
+            UNION SELECT 'Parents', COUNT(*) FROM parent
+            UNION SELECT 'Notes', COUNT(*) FROM note
+            UNION SELECT 'Programmes', COUNT(*) FROM programme
+        ")->fetchAll();
+        
+        foreach ($stats as $stat) {
+            echo "&nbsp;&nbsp;• {$stat['type']} : <strong>{$stat['count']}</strong><br>";
+        }
+        
+        echo "<br>💡 <em>Les nouvelles données sont préservées</em><br>";
     }
-
-    // 3. Enseignants
-    $enseignants = [
-        ['nom' => 'Adjovi', 'prenom' => 'Marc', 'mail' => 'marc.adjovi@ub.bj', 'Id_user' => 2],
-        ['nom' => 'Gbèto', 'prenom' => 'Jean', 'mail' => 'jean.gbeto@ub.bj', 'Id_user' => 4],
-        ['nom' => 'Ekoué', 'prenom' => 'David', 'mail' => 'david.ekoue@tg.tg', 'Id_user' => 8],
-        ['nom' => 'Zinsou', 'prenom' => 'Clarisse', 'mail' => 'clarisse.zinsou@ub.bj', 'Id_user' => null],
-        ['nom' => 'Ouattara', 'prenom' => 'Ibrahim', 'mail' => 'ibrahim.ouattara@ci.ci', 'Id_user' => null],
-        ['nom' => 'Sodjinou', 'prenom' => 'Luc', 'mail' => 'luc.sodjinou@ub.bj', 'Id_user' => null],
-        ['nom' => 'Ayélo', 'prenom' => 'Bénédicte', 'mail' => 'benedicte.ayelo@ub.bj', 'Id_user' => null],
-        ['nom' => 'Kombaté', 'prenom' => 'Issa', 'mail' => 'issa.kombate@ub.bj', 'Id_user' => null],
-        ['nom' => 'Nadjo', 'prenom' => 'Elise', 'mail' => 'elise.nadjo@ub.bj', 'Id_user' => null],
-        ['nom' => 'Agossa', 'prenom' => 'Patrick', 'mail' => 'patrick.agossa@ub.bj', 'Id_user' => null]
-    ];
-    
-    foreach ($enseignants as $e) {
-        insertIfNotExists($bdd, 'enseignant', $e);
-    }
-
-    // 4. Étudiants
-    $etudiants = [
-        ['nom' => 'Ahouansou', 'prenom' => 'Nadine', 'mail' => 'nadine.ahouansou@ub.bj', 'Id_fil' => 1, 'matricule' => 'INF001', 'Id_user' => 3],
-        ['nom' => 'Tossou', 'prenom' => 'Franck', 'mail' => 'franck.tossou@ub.bj', 'Id_fil' => 2, 'matricule' => 'GES002', 'Id_user' => 5],
-        ['nom' => 'Aklé', 'prenom' => 'Josué', 'mail' => 'josue.akle@ub.bj', 'Id_fil' => 3, 'matricule' => 'DRO003', 'Id_user' => 7],
-        ['nom' => 'Chabi', 'prenom' => 'Rita', 'mail' => 'rita.chabi@ub.bj', 'Id_fil' => 4, 'matricule' => 'COM004', 'Id_user' => null],
-        ['nom' => 'Adjahoui', 'prenom' => 'Karel', 'mail' => 'karel.adjahoui@ub.bj', 'Id_fil' => 5, 'matricule' => 'AGR005', 'Id_user' => null],
-        ['nom' => 'Soglo', 'prenom' => 'Prisca', 'mail' => 'prisca.soglo@ub.bj', 'Id_fil' => 6, 'matricule' => 'ECO006', 'Id_user' => null],
-        ['nom' => 'Hounsou', 'prenom' => 'Yannick', 'mail' => 'yannick.hounsou@ub.bj', 'Id_fil' => 7, 'matricule' => 'MAT007', 'Id_user' => null],
-        ['nom' => 'Tokpo', 'prenom' => 'Clarisse', 'mail' => 'clarisse.tokpo@ub.bj', 'Id_fil' => 8, 'matricule' => 'PHY008', 'Id_user' => null],
-        ['nom' => 'Loko', 'prenom' => 'Maxime', 'mail' => 'maxime.loko@ub.bj', 'Id_fil' => 9, 'matricule' => 'COM009', 'Id_user' => null],
-        ['nom' => 'Adjaho', 'prenom' => 'Patricia', 'mail' => 'patricia.adjaho@ub.bj', 'Id_fil' => 10, 'matricule' => 'INF010', 'Id_user' => null]
-    ];
-    
-    foreach ($etudiants as $e) {
-        insertIfNotExists($bdd, 'etud', $e);
-    }
-
-    // 5. Matières
-    $matieres = ['Mathématiques', 'Programmation', 'Réseaux', 'Comptabilité', 'Communication', 'Agronomie', 'Droit civil', 'Marketing', 'Statistiques', 'Physique'];
-    foreach ($matieres as $i => $m) {
-        insertIfNotExists($bdd, 'matiere', ['nom' => $m, 'Id_ens' => ($i % 10) + 1]);
-    }
-
-    // 6. Notes
-    for ($i = 1; $i <= 10; $i++) {
-        insertIfNotExists($bdd, 'note', [
-            'Id_ens' => $i, 
-            'Id_mat' => $i, 
-            'Id_etud' => $i, 
-            'cc' => rand(8,18), 
-            'exam' => rand(10,20)
-        ]);
-    }
-
-    // 7. Parents
-    $parents = [
-        ['nom' => 'Hounkpati', 'prenoms' => 'Céline', 'mail' => 'celine.hounkpati@gmail.com', 'Id_user' => 9],
-        ['nom' => 'Adoh', 'prenoms' => 'Yvan', 'mail' => 'yvan.adoh@gmail.com', 'Id_user' => 6],
-        ['nom' => 'Gbeto', 'prenoms' => 'Louise', 'mail' => 'louise.gbeto@gmail.com', 'Id_user' => null],
-        ['nom' => 'Adjovi', 'prenoms' => 'Thérèse', 'mail' => 'therese.adjovi@gmail.com', 'Id_user' => null],
-        ['nom' => 'Zinsou', 'prenoms' => 'Pierre', 'mail' => 'pierre.zinsou@gmail.com', 'Id_user' => null],
-        ['nom' => 'Soglo', 'prenoms' => 'René', 'mail' => 'rene.soglo@gmail.com', 'Id_user' => null],
-        ['nom' => 'Loko', 'prenoms' => 'Justine', 'mail' => 'justine.loko@gmail.com', 'Id_user' => null],
-        ['nom' => 'Agossa', 'prenoms' => 'Maurice', 'mail' => 'maurice.agossa@gmail.com', 'Id_user' => null],
-        ['nom' => 'Tossou', 'prenoms' => 'Noël', 'mail' => 'noel.tossou@gmail.com', 'Id_user' => null],
-        ['nom' => 'Adjaho', 'prenoms' => 'Patricia', 'mail' => 'patricia.adjaho@gmail.com', 'Id_user' => null]
-    ];
-    
-    foreach ($parents as $p) {
-        insertIfNotExists($bdd, 'parent', $p);
-    }
-
-    // 8. Relations parent-enfant
-    for ($i = 1; $i <= 10; $i++) {
-        insertIfNotExists($bdd, 'parent_enfant', ['Id_parent' => $i, 'Id_etud' => $i]);
-    }
-
-    // 9. Programmes
-    for ($i = 1; $i <= 10; $i++) {
-        insertIfNotExists($bdd, 'programme', [
-            'Id_ens' => $i, 
-            'Id_fil' => $i, 
-            'titre' => "Cours de " . $matieres[$i-1], 
-            'Id_user' => $i, 
-            'salle' => "Salle " . chr(64+$i),
-            'date_debut' => '2025-01-0' . (($i%9)+1), 
-            'date_fin' => '2025-02-0' . (($i%9)+1)
-        ]);
-    }
-
-    // 10. filliere_matiere
-    $relations = [
-        // Informatique
-        ['Id_fil' => 1, 'Id_mat' => 2], ['Id_fil' => 1, 'Id_mat' => 3], ['Id_fil' => 1, 'Id_mat' => 9],
-        // Gestion
-        ['Id_fil' => 2, 'Id_mat' => 4], ['Id_fil' => 2, 'Id_mat' => 8],
-        // Droit
-        ['Id_fil' => 3, 'Id_mat' => 7],
-        // Communication
-        ['Id_fil' => 4, 'Id_mat' => 5],
-        // Agronomie
-        ['Id_fil' => 5, 'Id_mat' => 6],
-        // Économie
-        ['Id_fil' => 6, 'Id_mat' => 9],
-        // Mathématiques
-        ['Id_fil' => 7, 'Id_mat' => 1], ['Id_fil' => 7, 'Id_mat' => 9],
-        // Physique
-        ['Id_fil' => 8, 'Id_mat' => 10],
-        // Comptabilité
-        ['Id_fil' => 9, 'Id_mat' => 4],
-        // Marketing
-        ['Id_fil' => 10, 'Id_mat' => 8]
-    ];
-
-    foreach ($relations as $r) {
-        insertIfNotExists($bdd, 'filliere_matiere', $r);
-    }
-
-    // echo "✅ Données insérées avec succès dans toutes les tables.";
 
 } catch (PDOException $e) {
     die("❌ Erreur : " . $e->getMessage());
