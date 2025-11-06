@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE = '../professeur/list.php';
+const API_BASE = 'list.php';
 
 // Éléments DOM
 const filiereSelect = document.getElementById("filiere");
