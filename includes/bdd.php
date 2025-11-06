@@ -349,19 +349,19 @@ try {
             insertIfNotExists($bdd, 'programme', $p);
         }
 
-        echo "✅ Données de démo insérées avec succès !<br>";
+        /*echo "✅ Données de démo insérées avec succès !<br>";
         echo "📧 Comptes de test créés :<br>";
         echo "&nbsp;&nbsp;• Admin: <strong>admin.ecole@ub.bj</strong> / <strong>pass123</strong><br>";
         echo "&nbsp;&nbsp;• Étudiant: <strong>nadine.ahouansou@ub.bj</strong> / <strong>pass123</strong><br>";
         echo "&nbsp;&nbsp;• Enseignant: <strong>marc.adjovi@ub.bj</strong> / <strong>pass123</strong><br>";
         echo "&nbsp;&nbsp;• Parent: <strong>jean.ahouansou@ub.bj</strong> / <strong>pass123</strong><br>";
-        
+       */ 
     } else {
         // Affiche les statistiques sans toucher aux données
-        echo "✅ Base de données déjà initialisée<br>";
-        echo "📊 Statistiques actuelles :<br>";
+     /*   echo "✅ Base de données déjà initialisée<br>";
+        echo "📊 Statistiques actuelles :<br>"; */
         
-        $stats = $bdd->query("
+       /* $stats = $bdd->query("
             SELECT 'Utilisateurs' as type, COUNT(*) as count FROM user
             UNION SELECT 'Étudiants', COUNT(*) FROM etud  
             UNION SELECT 'Enseignants', COUNT(*) FROM enseignant
@@ -372,10 +372,10 @@ try {
         
         foreach ($stats as $stat) {
             echo "&nbsp;&nbsp;• {$stat['type']} : <strong>{$stat['count']}</strong><br>";
-        }
+        }µ:
         
-        echo "<br>💡 <em>Les nouvelles données sont préservées</em><br>";
-    }
+       /* echo "<br>💡 <em>Les nouvelles données sont préservées</em><br>";
+  */  }
 
 } catch (PDOException $e) {
     die("❌ Erreur : " . $e->getMessage());
