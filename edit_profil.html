@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier Profil</title>
+   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f3f4f6;
+        }
+        .card {
+            width: 100%;
+            max-width: 28rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            padding: 1.5rem;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h2 class="mb-0">Modifier les informations</h2>
+        </div>
+
+        <div class="card-body">
+                        <?php if (!empty($message)): ?>
+                            <div class="alert alert-<?php echo strpos($message, '✅') !== false ? 'success' : 'danger'; ?>" role="alert">
+                                <?php echo $message; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nom</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="name"
+                                    name="name"
+                                    placeholder="Entrez votre nom"
+                                    value="<?php echo htmlspecialchars($utilisateur['nom']); ?>"
+                                    required
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="prenom" class="form-label">Prénom</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="prenom"
+                                    name="prénom"
+                                    placeholder="Entrez votre prénom"
+                                    value="<?php echo htmlspecialchars($utilisateur['prenom']); ?>"
+                                    required
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    class="form-control"
+                                    id="email"
+                                    name="email"
+                                    placeholder="Entrez votre email"
+                                    value="<?php echo htmlspecialchars($utilisateur['mail']); ?>"
+                                    required
+                                />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tel" class="form-label">Téléphone</label>
+                                <input
+                                    type="tel"
+                                    class="form-control"
+                                    id="tel"
+                                    name="tel"
+                                    placeholder="Entrez votre téléphone"
+                                    value="<?php echo htmlspecialchars($utilisateur['tel']); ?>"
+                                    required
+                                />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                 Enregistrer les modifications
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+   
+</body>
+
+</html>

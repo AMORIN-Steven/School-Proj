@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f3f4f6;
+        }
+        .card {
+            width: 100%;
+            max-width: 28rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            padding: 1.5rem;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+        .info-item {
+            margin-bottom: 1.5rem;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .info-value {
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        .btn-group-custom {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .btn-group-custom a {
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h2 class="mb-0"> Mon Profil</h2>
+        </div>
+
+        <div class="card-body">
+            <div class="info-item">
+                <div class="info-label">Nom</div>
+                <div class="info-value"><?php echo htmlspecialchars($utilisateur['nom']); ?></div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Prénom</div>
+                <div class="info-value"><?php echo htmlspecialchars($utilisateur['prenom']); ?></div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value"><?php echo htmlspecialchars($utilisateur['mail']); ?></div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Téléphone</div>
+                <div class="info-value"><?php echo htmlspecialchars($utilisateur['tel']); ?></div>
+            </div>
+
+            
+            <div class="btn-group-custom">
+                <a href="edit_profil.php" class="btn btn-primary">Modifier Profil</a>
+                <a href="edit_password.php" class="btn btn-warning">Changer Mots de passe</a>
+            </div>
+        </div>
+    </div>
+
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
