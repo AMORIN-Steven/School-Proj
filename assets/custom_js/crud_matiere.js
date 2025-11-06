@@ -1,4 +1,4 @@
-let matieres = [
+let matieres = [ 
     { id: 1, nom: "Mathématiques", filieres: ["SIL", "SSRI"] },
     { id: 2, nom: "Physique", filieres: ["SSRI", "RIT"] },
     { id: 3, nom: "Informatique", filieres: ["SIL", "RIT"] }

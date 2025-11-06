@@ -1,5 +1,5 @@
 <?php
-class GestionMatieres {
+class GestionMatieres { 
     private $pdo;
     
     public function __construct() {
