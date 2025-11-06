@@ -2,7 +2,7 @@
 require_once 'includes/bdd.php';
 require_once 'includes/auth_functions.php';
 
-// Vérifier la connexion
+// Vérifier la connex
 verifierConnexion();
 
 // Récupérer les informations utilisateur
